@@ -1,0 +1,44 @@
+[ 
+  // Клиент > Сервер
+  // Сообщаем роль клиента
+  {
+    "type": "info",
+    "params": {
+      "type": "role_assign",
+      "role": "teacher"
+    }
+  },
+
+  // Клиент > Сервер
+  // Добавляем ученика в группу
+  {
+    "type": "request",
+    "params": {
+      "type": "student_add",
+      "student": {
+        "name": "Пупкин В. О."
+      }
+    }
+  },
+
+
+
+
+  // Клиент < Сервер
+  // Сообщаем токен группы учителю
+  {
+    "type": "info",
+    "data": "",
+    "params": {
+      "type": "group_token",
+      "token": "R$33W"
+    }
+  },
+
+  // Клиент < Сервер
+  // Ошибка
+  {
+    "type": "error",
+    "data": "invalid role"
+  }
+]
