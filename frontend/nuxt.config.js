@@ -60,6 +60,9 @@ export default {
   build: {
   },
   env: {
-    socketServer: 'ws://localhost:8081'
+    socketServer: 'ws://37.77.104.246:8081/',
+  },
+  router: {
+    base: '/pyfinalgame/'
   }
 }
