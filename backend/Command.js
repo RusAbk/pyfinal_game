@@ -16,6 +16,9 @@ class Command{
             this.params = obj.params
         }
     }
+    toString(){
+        return JSON.stringify(this)
+    }
 }
 
 module.exports = Command;
