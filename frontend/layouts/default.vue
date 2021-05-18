@@ -1,31 +1,13 @@
 <template>
   <v-app>
-    <!--v-navigation-drawer v-model="drawer" app>
-      <v-list>
-        <v-list-item
-          v-for="(item, i) in items"
-          :key="i"
-          :to="item.to"
-          router
-          exact
-        >
-          <v-list-item-action>
-            <v-icon>{{ item.icon }}</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title v-text="item.title" />
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer-->
-    <v-app-bar app>
-      <!--v-app-bar-nav-icon @click.stop="drawer = !drawer" /-->
+    <v-app-bar app dark color="blue darken-2">
       <v-container class="d-flex">
         <v-toolbar-title v-text="title" />
         <v-spacer></v-spacer>
-        <v-btn to="/" color="primary" plain><v-icon class="mr-2" @click="localStorage.clear()">mdi-exit-to-app</v-icon> Перезайти</v-btn>
+        <v-btn to="/" color="white" plain><v-icon class="mr-2" @click="localStorage.clear()">mdi-exit-to-app</v-icon> Перезайти</v-btn>
       </v-container>
     </v-app-bar>
+    
     <v-main class="indigo lighten-5">
       <v-container>
         <nuxt />
@@ -60,9 +42,21 @@ export default {
     };
   },
   mounted() {
-    this.$ws.onopen = function () {
+    this.$store.subscribe((mutation, state) => {
+      localStorage.setItem("store", JSON.stringify(state));
+    });
+    this.$ws.onopen = () => {
       console.log("Соединение установлено.");
-    };
+      // this.$ws.send(
+      //   JSON.stringify({
+      //     type: "request",
+      //     params: {
+      //       type: "initClient",
+      //       id: this.$store.state.id,
+      //     }
+      //   })
+      // );
+    }
     this.$ws.onclose = function (event) {
       if (event.wasClean) {
         console.log("Соединение закрыто чисто");
@@ -70,10 +64,26 @@ export default {
         console.log("Обрыв соединения");
       }
       console.log("Код: " + event.code + " причина: " + event.reason);
-    };
-    this.$store.subscribe((mutation, state) => {
-      localStorage.setItem("store", JSON.stringify(state));
-    });
+    }
+    // this.$ws.onmessage = (event) => {
+    //   let data_obj = JSON.parse(event.data)
+    //   console.log(data_obj);
+
+    //   if(data_obj.params.event == 'clientInitSuccess'){
+    //     this.$store.commit('setId', data_obj.params.id)
+    //   }
+    //   if(data_obj.params.event == 'clientInitError'){
+    //     this.$ws.send(
+    //       JSON.stringify({
+    //         type: "request",
+    //         params: {
+    //           type: "initClient",
+    //           id: undefined,
+    //         }
+    //       })
+    //     );
+    //   }
+    // }
   },
   beforeCreate() {
     this.$store.commit("initialiseStore");

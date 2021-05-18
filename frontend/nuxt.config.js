@@ -10,9 +10,9 @@ export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
     titleTemplate: '%s - frontend',
-    title: 'frontend',
+    title: 'PyFinalGame',
     htmlAttrs: {
-      lang: 'en'
+      lang: 'ru'
     },
     meta: [
       { charset: 'utf-8' },
@@ -61,6 +61,7 @@ export default {
   },
   env: {
     socketServer: 'ws://37.77.104.246:8081/',
+    // socketServer: 'ws://localhost:8081/',
   },
   router: {
     base: '/pyfinalgame/'

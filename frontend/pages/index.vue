@@ -151,6 +151,7 @@ export default {
       if (data.params.event == "joinSuccess") {
         this.$store.commit("setKey", data.params.key);
         this.$store.commit("setRole", data.params.role);
+        this.$store.commit("setId", data.params.id);
         this.$nuxt.$router.replace({ path: "/pregame" });
       }
     },

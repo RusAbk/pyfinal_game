@@ -1,7 +1,8 @@
 export const state = () => ({
   key: undefined,
   name: undefined,
-  role: undefined
+  role: undefined,
+  id: undefined
 })
 
 export const mutations = {
@@ -13,6 +14,9 @@ export const mutations = {
   },
   setRole(state, role) {
     state.role = role
+  },
+  setId(state, id) {
+    state.id = id
   },
   initialiseStore(state) {
     if (localStorage.getItem('store')) {

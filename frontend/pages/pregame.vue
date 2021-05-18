@@ -92,6 +92,7 @@ export default {
           params: {
             type: "joinGame",
             key: this.$store.state.key,
+            id: this.$store.state.id
           },
         })
       );
@@ -100,7 +101,7 @@ export default {
   mounted() {
     this.$ws.onmessage = (event) => {
       this.wsDataReceived(event.data)
-    };
+    }
     if(this.$store.state.key != undefined)
       setTimeout(this.joinGame, 1000)
   },

@@ -7,13 +7,13 @@
     >
       {{ error.text }}
     </v-alert>
-    <h2>😎 {{$store.state.name}}</h2>
+    <h2>😎 {{ $store.state.name }}</h2>
     <v-card class="mt-6 pa-6" elevation="2">
       <v-card-title> 🏆 Турнирная таблица </v-card-title>
 
       <v-card-text>
         <v-data-table
-          :headers="headers"
+          :headers="playersTable.headers"
           :items="players"
           :items-per-page="10"
           sort-by="cash"
@@ -77,13 +77,50 @@
           </template>
         </v-data-table>
       </v-card-text>
+
+      <v-card-title>
+        🤝 Открытые сделки
+        <v-btn
+          outlined
+          small
+          color="blue-grey darken-2"
+          @click="openDeal"
+          class="ml-2"
+          >🖐️ Предложить сделку</v-btn
+        >
+      </v-card-title>
+      <v-card-subtitle></v-card-subtitle>
+      <v-card-text>
+        <v-data-table
+          :headers="dealsTable.headers"
+          :items="deals"
+          :items-per-page="10"
+        >
+          <template v-slot:item.actions="{ item }">
+            <v-btn
+              outlined
+              small
+              color="green"
+              v-if="$store.state.id != item.first.id"
+              @click="acceptDeal(item.id)"
+              >🤝 Принять</v-btn
+            >
+            <div v-else>
+              Ждём партнера <v-progress-circular
+                :size="25"
+                color="primary"
+                indeterminate
+                class="ml-2"
+              ></v-progress-circular> 
+            </div>
+          </template>
+        </v-data-table>
+      </v-card-text>
     </v-card>
 
     <v-dialog v-model="editNameDialog.visible" persistent max-width="300">
       <v-card>
-        <v-card-title class="headline">
-          Сменить имя
-        </v-card-title>
+        <v-card-title class="headline"> Сменить имя </v-card-title>
         <v-card-text>
           <v-text-field
             label="Введите новое имя"
@@ -93,12 +130,38 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="green darken-1" text @click="editNameDialog.visible = false">
+          <v-btn
+            color="green darken-1"
+            text
+            @click="editNameDialog.visible = false"
+          >
             Отмена
           </v-btn>
           <v-btn color="green darken-1" text @click="changeName()">
             Сменить
           </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="dealMode" persistent max-width="500">
+      <v-card class="pb-2">
+        <v-card-title class="headline"
+          >{{ opponent }} пришел на сделку</v-card-title
+        >
+        <v-card-subtitle></v-card-subtitle>
+        <v-card-text>
+          <p>Что ты будешь делать? Обманешь или будешь сотрудничать?</p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="red darken-1" text x-large width="200px" outlined @click="this.cheatDeal">
+            <span class="text-h5 mr-2">🤡</span> Обмануть
+          </v-btn>
+          <v-btn color="green darken-1" text x-large width="200px" outlined @click="this.collaborateDeal">
+            <span class="text-h5 mr-2">😻</span> Сотрудничать
+          </v-btn>
+          <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -109,13 +172,25 @@
 export default {
   data() {
     return {
-      headers: [
-        { text: "Имя", value: "name" },
-        { text: "Решено", value: "solved" },
-        { text: "Потрачено", value: "spent" },
-        { text: "🤑", value: "cash" },
-      ],
+      dealMode: false,
+      opponent: "Вася",
+      dealId: '',
+      playersTable: {
+        headers: [
+          { text: "Имя", value: "name" },
+          { text: "Решено", value: "solved" },
+          { text: "Потрачено", value: "spent" },
+          { text: `💰`, value: "cash" },
+        ],
+      },
+      dealsTable: {
+        headers: [
+          { text: "Предлагает", value: "first.name" },
+          { text: "Действия", value: "actions" },
+        ],
+      },
       players: [],
+      deals: [],
       error: {
         visibility: false,
         text: "",
@@ -123,33 +198,33 @@ export default {
       editNameDialog: {
         visible: false,
         userId: undefined,
-        name: ''
+        name: "",
       },
     };
   },
   methods: {
-    openEditNameDialog(id){
-      this.editNameDialog.visible = true
-      this.editNameDialog.userId = id
-      for(let player of this.players){
-        if(player.id == id){
-          this.editNameDialog.name = player.name
+    openEditNameDialog(id) {
+      this.editNameDialog.visible = true;
+      this.editNameDialog.userId = id;
+      for (let player of this.players) {
+        if (player.id == id) {
+          this.editNameDialog.name = player.name;
           break;
         }
       }
     },
-    changeName(){
-      this.editNameDialog.visible = false
+    changeName() {
+      this.editNameDialog.visible = false;
       this.$ws.send(
         JSON.stringify({
           type: "request",
           params: {
             type: "setName",
             name: this.editNameDialog.name,
-            id: this.editNameDialog.userId
+            id: this.editNameDialog.userId,
           },
         })
-      )
+      );
     },
     wsDataReceived(data) {
       data = JSON.parse(data);
@@ -172,6 +247,12 @@ export default {
       if (data.params.event == "getPlayersSuccess") {
         this.players = data.params.players;
       }
+      if (data.params.event == "getDealsSuccess") {
+        this.deals = data.params.deals;
+      }
+      if(data.params.event != 'setNameError' && data.params.event != 'joinError' && data.data != "Not joined the game" && data.params.event.indexOf('Error') != -1){
+        this.showError(data.data)
+      }
     },
     requestReceived(data) {
       console.log("request", data);
@@ -179,7 +260,21 @@ export default {
         this.players = data.params.players;
       }
       if (data.params.event == "setNewName") {
-        this.$store.commit('setName', data.params.name)
+        this.$store.commit("setName", data.params.name);
+      }
+      if (data.params.event == "dealsListUpdated") {
+        this.deals = data.params.deals;
+      }
+      if (data.params.event == "openDealDialog") {
+        this.dealMode = true;
+        this.opponent = data.params.opponent.name;
+      }
+      if (data.params.event == "closeDealDialog") {
+        this.dealMode = false;
+        this.opponent = '';
+      }
+      if (data.params.event == "showError") {
+        this.showError(data.data)
       }
     },
     showError(text) {
@@ -207,6 +302,7 @@ export default {
           params: {
             type: "joinGame",
             key: this.$store.state.key,
+            id: this.$store.state.id
           },
         })
       );
@@ -217,6 +313,47 @@ export default {
           type: "request",
           params: {
             type: "getPlayers",
+          },
+        })
+      );
+    },
+    getDeals() {
+      this.$ws.send(
+        JSON.stringify({
+          type: "request",
+          params: {
+            type: "getDeals",
+          },
+        })
+      );
+    },
+    acceptDeal(id){
+      this.$ws.send(
+        JSON.stringify({
+          type: "request",
+          params: {
+            type: "acceptDeal",
+            id: id
+          },
+        })
+      );
+    },
+    cheatDeal(){
+      this.$ws.send(
+        JSON.stringify({
+          type: "request",
+          params: {
+            type: "cheatDeal",
+          },
+        })
+      );
+    },
+    collaborateDeal(){
+      this.$ws.send(
+        JSON.stringify({
+          type: "request",
+          params: {
+            type: "collaborateDeal",
           },
         })
       );
@@ -270,9 +407,20 @@ export default {
         this.joinGame();
         this.setName();
         this.getPlayers();
+        this.getDeals();
       } else {
         setTimeout(this.tryToConnect, 500);
       }
+    },
+    openDeal() {
+      this.$ws.send(
+        JSON.stringify({
+          type: "request",
+          params: {
+            type: "openDeal",
+          },
+        })
+      );
     },
   },
   mounted() {
